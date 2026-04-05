@@ -12,6 +12,8 @@ services:
       - NODE_ENV=production
       - JWT_SECRET=finguard_super_secret_key_2026
     restart: unless-stopped
+    networks:
+      - finguard_net
 
   frontend:
     build:
@@ -23,3 +25,9 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+    networks:
+      - finguard_net
+
+networks:
+  finguard_net:
+    driver: bridge

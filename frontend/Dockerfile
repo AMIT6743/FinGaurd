@@ -7,12 +7,20 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Build the project
+# Copy source and build
+# VITE_API_URL is empty so the frontend uses relative /api paths,
+# which NGINX will proxy to the backend container.
 COPY . .
-RUN npm run build
+RUN VITE_API_URL="" npm run build
 
 # Stage 2: Serve the application using NGINX
 FROM nginx:alpine
+
+# Remove the default NGINX config
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copy our custom NGINX config that proxies /api to backend
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built assets from builder stage
 COPY --from=build /app/dist /usr/share/nginx/html

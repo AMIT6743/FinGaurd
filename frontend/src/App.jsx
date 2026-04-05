@@ -1191,7 +1191,8 @@ const RecordsPage = ({ role }) => {
   const handleExport = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:3000/api/records/export", {
+      const API_BASE = import.meta.env.VITE_API_URL || '/api';
+      const response = await fetch(`${API_BASE}/records/export`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
