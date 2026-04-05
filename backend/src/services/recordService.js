@@ -60,7 +60,7 @@ class RecordService {
       date,
       search,
       page = 1,
-      limit = 10,
+      limit = 1000,
     } = options;
 
     const where = {
@@ -186,6 +186,23 @@ class RecordService {
       await t.rollback();
       throw error;
     }
+  }
+
+  async getAllRecords() {
+    const rawRecords = await Record.findAll({
+      where: { isDeleted: false },
+      order: [['date', 'DESC'], ['createdAt', 'DESC']],
+      attributes: ['id', 'amount', 'type', 'category', 'date', 'note'],
+    });
+
+    return rawRecords.map(r => {
+      const data = r.toJSON();
+      // Ensure expenses are represented as negative numbers for formal export
+      if (data.type === 'expense') {
+        data.amount = data.amount * -1;
+      }
+      return data;
+    });
   }
 }
 

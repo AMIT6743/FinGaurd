@@ -18,5 +18,11 @@ router.put('/:id', auth, rbac(['admin']), validate(recordValidation.updateRecord
 // Only admin can delete records
 router.delete('/:id', auth, rbac(['admin']), validate(recordValidation.deleteRecord), recordController.deleteRecord);
 
+const { verifyToken } = require('../middleware/auth');
+const { requireRole } = require('../middleware/rbac');
+
+// CSV Export (Analyst and Admin only)
+router.get('/export', verifyToken, requireRole(['analyst', 'admin']), recordController.exportRecords);
+
 module.exports = router;
 

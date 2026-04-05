@@ -66,6 +66,30 @@ class RecordController {
       next(error);
     }
   }
+
+  async exportRecords(req, res, next) {
+    try {
+      const records = await recordService.getAllRecords();
+
+      const fields = [
+        { label: 'Date', value: 'date' },
+        { label: 'Type', value: 'type' },
+        { label: 'Category', value: 'category' },
+        { label: 'Amount', value: 'amount' },
+        { label: 'Note', value: 'note' }
+      ];
+
+      const { Parser } = require('json2csv');
+      const json2csvParser = new Parser({ fields });
+      const csv = json2csvParser.parse(records);
+
+      res.header('Content-Type', 'text/csv');
+      res.attachment('FinFlow_Transactions.csv');
+      return res.send(csv);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 module.exports = new RecordController();

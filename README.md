@@ -65,6 +65,18 @@ docker-compose up --build
 
 ---
 
+## 🧪 Test Credentials
+
+Use these pre-seeded accounts to explore the different levels of access:
+
+| Role | Email | Password |
+| --- | --- | --- |
+| **Admin** | `admin@example.com` | `password123` |
+| **Analyst** | `analyst@example.com` | `password123` |
+| **Viewer** | `viewer@example.com` | `password123` |
+
+---
+
 ## 🔐 Role-Based Access Control (RBAC)
 
 | Role | Permissions |
@@ -88,6 +100,7 @@ Authentication: Pass your JWT token in the `Authorization: Bearer <token>` heade
 
 ### Records
 - `GET /records`: Fetch paginated and filtered historical records.
+- `GET /records/export`: Export all financial records to a downloadable CSV file. (Admin / Analyst)
 - `POST /records`: Create a new income/expense record.
 - `PUT /records/:id`: Update an existing record. (Admin only)
 - `DELETE /records/:id`: Soft delete a record. (Admin only)
@@ -101,6 +114,19 @@ Authentication: Pass your JWT token in the `Authorization: Bearer <token>` heade
 - `GET /users`: List all platform users.
 - `POST /users`: Register a new user enforcing secure password requirements.
 - `PATCH /users/:id/status`: Quickly toggle an account's `isActive` state to suspend login capabilities.
+
+---
+
+## 🛡️ System Robustness & Advanced Features
+
+- **Secure Identity Management (JWT)**: Stateless authentication via JSON Web Tokens handles user sessions securely without server-side state, strictly enforcing role-based permissions at the middleware level.
+- **Scalable Data Handling (Pagination)**: Server-side limit and offset logic prevents frontend bloat, keeping the system lightning-fast even with 10,000+ records.
+- **Dynamic Discovery (Search & Filtering)**: Integrated search functionality and multi-criteria filters (category, type, date range) allow users to locate specific transactions instantly.
+- **Data Forensic Integrity (Soft Delete)**: Uses an `isDeleted` flag instead of destructive physical deletion, ensuring financial history remains intact for internal auditing.
+- **Brute-Force Protection (Rate Limiting)**: Middleware-based IP throttling protects the system from automated attacks and prevents the login endpoint from being overwhelmed.
+- **Reliability (Integration Testing)**: Automated test suites verify core business logic, balance calculations, and authentication guards to guarantee system stability before deployment.
+- **Developer Experience (API Documentation)**: Standardized Swagger technical documentation makes the backend "Collaborative Ready" for other developers.
+- **Data Portability (CSV Export)**: Programmatic extraction of financial records into structured CSV file downloads, allowing users to seamlessly import their ledger data into external accounting systems.
 
 ---
 

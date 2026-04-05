@@ -8,15 +8,24 @@ const Record = require('../models/record');
  * Safe for 10,000+ records.
  */
 class DashboardService {
-  async getSummary() {
+  async getSummary(month = null) {
+    let whereClause = 'isDeleted = 0';
+    const replacements = {};
+
+    if (month) {
+      whereClause += ' AND date LIKE :monthMatch';
+      replacements.monthMatch = `${month}%`;
+    }
+
     // ── 1) SUM income and expense directly in SQL ──────────────────
     const [totalsResult] = await sequelize.query(`
       SELECT
-        SUM(CASE WHEN type = 'income' AND isDeleted = 0 THEN amount ELSE 0 END) AS totalIncome,
-        SUM(CASE WHEN type = 'expense' AND isDeleted = 0 THEN amount ELSE 0 END) AS totalExpense,
-        COUNT(CASE WHEN isDeleted = 0 THEN 1 END) AS totalRecords
+        SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) AS totalIncome,
+        SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS totalExpense,
+        COUNT(1) AS totalRecords
       FROM records
-    `);
+      WHERE ${whereClause}
+    `, { replacements });
 
     const totalIncome  = Number(totalsResult[0].totalIncome  || 0);
     const totalExpense = Number(totalsResult[0].totalExpense || 0);
@@ -30,10 +39,10 @@ class DashboardService {
         SUM(CASE WHEN type = 'income'  THEN amount ELSE 0 END) AS income,
         SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) AS expense
       FROM records
-      WHERE isDeleted = 0
+      WHERE ${whereClause}
       GROUP BY category
       ORDER BY (income + expense) DESC
-    `, { type: sequelize.QueryTypes.SELECT });
+    `, { replacements, type: sequelize.QueryTypes.SELECT });
 
     const categoryTotals = {};
     categoryRows.forEach(row => {
@@ -44,7 +53,7 @@ class DashboardService {
       };
     });
 
-    // ── 3) Monthly trends via SQL GROUP BY ─────────────────────────
+    // ── 3) Monthly trends via SQL GROUP BY ── (Always show all months for context)
     const monthRows = await sequelize.query(`
       SELECT
         SUBSTR(date, 1, 7) AS month,
@@ -65,11 +74,16 @@ class DashboardService {
       };
     });
 
-    // ── 4) Recent transactions (last 5 only) ───────────────────────
+    // ── 4) Recent transactions ── (Filter by month if selected)
+    const recentWhere = { isDeleted: false };
+    if (month) {
+      recentWhere.date = { [Op.like]: `${month}%` };
+    }
+
     const recentData = await Record.findAll({
-      where: { isDeleted: false },
+      where: recentWhere,
       order: [['date', 'DESC'], ['createdAt', 'DESC']],
-      limit: 5,
+      limit: month ? 10 : 5, // Show more if filtered
       attributes: ['id', 'userId', 'amount', 'type', 'category', 'date', 'note'],
     });
     const recentTransactions = recentData.map(r => r.toJSON());

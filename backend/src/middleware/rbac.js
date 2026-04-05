@@ -21,3 +21,4 @@ const rbacMiddleware = (allowedRoles) => {
 };
 
 module.exports = rbacMiddleware;
+module.exports.requireRole = rbacMiddleware;

@@ -39,6 +39,7 @@ import {
   Calendar,
   Filter,
   RefreshCw,
+  Download,
   Activity as ActivityIcon,
 } from "lucide-react";
 
@@ -512,41 +513,157 @@ const LoginPage = ({ onLogin }) => {
   };
 
   return (
-    <div style={{ display: 'flex', height: '100vh', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9' }}>
-      <form onSubmit={handleSubmit} style={{ background: '#fff', padding: 40, borderRadius: 14, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', width: 400 }}>
-        <h1 style={{ marginBottom: 20, fontSize: 24, fontWeight: 800 }}>FinFlow Login</h1>
-        {error && <div style={{ color: '#ef4444', marginBottom: 15, fontSize: 13, background: '#fef2f2', padding: 10, borderRadius: 8 }}>{error}</div>}
-        <div style={{ marginBottom: 15 }}>
-          <Input label="Email" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="admin@example.com" />
+    <div style={{ 
+      display: 'flex', 
+      height: '100vh', 
+      alignItems: 'center', 
+      justifyContent: 'center', 
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      fontFamily: "'Inter', sans-serif"
+    }}>
+      <div style={{ 
+        background: '#fff', 
+        padding: '50px 40px', 
+        borderRadius: 20, 
+        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.08)', 
+        width: 440,
+        border: '1px solid #f1f5f9'
+      }}>
+        <div style={{ textAlign: 'center', marginBottom: 35 }}>
+          <div style={{ 
+            display: 'inline-flex', 
+            background: '#0f172a', 
+            color: '#fff', 
+            padding: 12, 
+            borderRadius: 12, 
+            marginBottom: 16 
+          }}>
+            <Shield size={24} />
+          </div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, color: '#0f172a', letterSpacing: '-0.025em', marginBottom: 8 }}>
+            FinGuard Portal
+          </h1>
+          <p style={{ color: '#64748b', fontSize: 14 }}>
+            Secure access to your professional financial dashboard
+          </p>
         </div>
-        <div style={{ marginBottom: 25 }}>
-          <Input label="Password" type="password" required value={password} onChange={e => setPassword(e.target.value)} placeholder="password123" />
+
+        <form onSubmit={handleSubmit}>
+          {error && (
+            <div style={{ 
+              color: '#dc2626', 
+              marginBottom: 20, 
+              fontSize: 13, 
+              background: '#fef2f2', 
+              padding: '12px 16px', 
+              borderRadius: 10,
+              border: '1px solid #fee2e2',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8
+            }}>
+              <AlertCircle size={14} />
+              {error}
+            </div>
+          )}
+          
+          <div style={{ marginBottom: 20 }}>
+            <Input 
+              label="Email Address" 
+              type="email" 
+              required 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              placeholder="e.g. administrator@finguard.com" 
+            />
+          </div>
+          
+          <div style={{ marginBottom: 30 }}>
+            <Input 
+              label="Security Password" 
+              type="password" 
+              required 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              placeholder="••••••••" 
+            />
+          </div>
+          
+          <Btn 
+            type="submit" 
+            disabled={loading} 
+            style={{ 
+              width: '100%', 
+              justifyContent: 'center', 
+              padding: '14px',
+              fontSize: 15,
+              borderRadius: 12,
+              boxShadow: '0 4px 6px -1px rgba(15, 23, 42, 0.2)'
+            }}
+          >
+            {loading ? "Authenticating..." : "Authorize Access"}
+          </Btn>
+        </form>
+
+        <div style={{ 
+          marginTop: 35, 
+          padding: '16px', 
+          background: '#f8fafc', 
+          borderRadius: 12, 
+          border: '1px dashed #cbd5e1',
+          textAlign: 'center'
+        }}>
+          <span style={{ fontSize: 11, color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>
+            System Access Credentials
+          </span>
+          <div style={{ fontSize: 13, color: '#475569', display: 'flex', justifyContent: 'center', gap: 12 }}>
+            <span><strong>User:</strong> admin@example.com</span>
+            <span style={{ color: '#cbd5e1' }}>|</span>
+            <span><strong>Pass:</strong> password123</span>
+          </div>
         </div>
-        <Btn type="submit" disabled={loading} style={{ width: '100%', justifyContent: 'center' }}>
-          {loading ? "Logging in..." : "Login"}
-        </Btn>
-        <p style={{ marginTop: 20, fontSize: 12, color: '#9ca3af', textAlign: 'center' }}>Try: admin@example.com / password123</p>
-      </form>
+      </div>
     </div>
   );
 };
+
 
 // ── PAGES ──────────────────────────────────────────────────────────────────
 const DashboardPage = ({ role }) => {
   const can = CAN[role];
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(""); // empty string for "All Time"
 
   useEffect(() => {
-    apiFetch("/dashboard/summary")
+    const url = selectedMonth 
+      ? `/dashboard/summary?month=${selectedMonth}` 
+      : "/dashboard/summary";
+    
+    apiFetch(url)
       .then(setData)
       .catch(e => setError(e.message));
-  }, []);
+  }, [selectedMonth]);
 
   if (error) return <div style={{ padding: 20, color: "#ef4444" }}>Error loading dashboard: {error}</div>;
   if (!data) return <div style={{ padding: 20 }}>Loading dashboard data...</div>;
 
   const { totalIncome, totalExpense, netBalance, categoryTotals, recentTransactions, monthlyTrends, totalRecords } = data;
+
+  // Derive month options from the trends data
+  const monthOptions = [
+    { value: "", label: "All Time" },
+    ...Object.keys(monthlyTrends)
+      .sort((a, b) => b.localeCompare(a)) // Sort by newest month first
+      .map(m => {
+        const [year, month] = m.split("-");
+        const date = new Date(year, month - 1);
+        return {
+          value: m,
+          label: date.toLocaleDateString("en-US", { month: "long", year: "numeric" })
+        };
+      })
+  ];
 
   const catArray = Object.entries(categoryTotals)
     .map(([name, vals]) => ({ name, value: vals.income + vals.expense }))
@@ -558,6 +675,46 @@ const DashboardPage = ({ role }) => {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* Header with Filter */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center',
+        background: '#fff',
+        padding: '16px 20px',
+        borderRadius: 14,
+        border: '1px solid #f1f5f9'
+      }}>
+        <div>
+          <h2 style={{ fontSize: 18, fontWeight: 800, color: '#0f172a', margin: 0 }}>Analytics Overview</h2>
+          <p style={{ fontSize: 13, color: '#64748b', marginTop: 2 }}>
+            {selectedMonth ? `Showing performance for ${monthOptions.find(o => o.value === selectedMonth)?.label}` : "Showing all-time financial records"}
+          </p>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' }}>Filter Period</span>
+          <select 
+            value={selectedMonth} 
+            onChange={e => setSelectedMonth(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 10,
+              border: '1px solid #e2e8f0',
+              fontSize: 14,
+              fontWeight: 500,
+              color: '#0f172a',
+              outline: 'none',
+              cursor: 'pointer',
+              background: '#f8fafc'
+            }}
+          >
+            {monthOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* KPI Grid */}
       <div
         style={{
@@ -1031,6 +1188,29 @@ const RecordsPage = ({ role }) => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:3000/api/records/export", {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (!response.ok) throw new Error("Export failed");
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "FinFlow_Transactions.csv";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (e) {
+      alert("Failed to export: " + e.message);
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
       {/* Toolbar */}
@@ -1107,6 +1287,11 @@ const RecordsPage = ({ role }) => {
             </option>
           ))}
         </select>
+        {(role === 'admin' || role === 'analyst') && (
+          <Btn onClick={handleExport} variant="ghost">
+            <Download size={14} /> Export CSV
+          </Btn>
+        )}
         {can.createRecord && (
           <Btn onClick={() => setModal({ type: "add" })}>
             <Plus size={14} /> Add Record
