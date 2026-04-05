@@ -60,6 +60,16 @@ app.use('/api/records', recordRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/admin', adminRoutes);
 
+// ── Static Assets (Frontend) ──────────────────────────────────────
+const frontendPath = path.join(__dirname, '..', '..', 'frontend', 'dist');
+if (fs.existsSync(frontendPath)) {
+  app.use(express.static(frontendPath));
+  // Serve index.html for all non-API routes (SPA fallback)
+  app.get(/^(?!\/api).+/, (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
+
 // Health check route
 app.get('/health', (req, res) => {
   res.status(200).json({
