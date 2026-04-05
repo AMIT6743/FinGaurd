@@ -37,10 +37,12 @@ import {
   Activity,
   Tag,
   Calendar,
-  AlignLeft,
   Filter,
   RefreshCw,
+  Activity as ActivityIcon,
 } from "lucide-react";
+
+import ActivityLog from "./ActivityLog";
 
 // Mock data removed, fetching from backend now.
 
@@ -92,6 +94,7 @@ const CAN = {
     manageUsers: true,
     viewAnalytics: true,
     viewRecords: true,
+    viewActivity: true,
   },
   analyst: {
     createRecord: false,
@@ -100,6 +103,7 @@ const CAN = {
     manageUsers: false,
     viewAnalytics: true,
     viewRecords: true,
+    viewActivity: true,
   },
   viewer: {
     createRecord: false,
@@ -108,6 +112,7 @@ const CAN = {
     manageUsers: false,
     viewAnalytics: false,
     viewRecords: false,
+    viewActivity: false,
   },
 };
 
@@ -1913,6 +1918,7 @@ export default function App() {
     { id: "records", label: "Records", icon: FileText },
     { id: "analytics", label: "Analytics", icon: BarChart2 },
     { id: "users", label: "Users", icon: Users },
+    { id: "activity", label: "Activity Log", icon: ActivityIcon },
   ];
 
   const PAGE_TITLES = {
@@ -1920,6 +1926,7 @@ export default function App() {
     records: "Financial Records",
     analytics: "Analytics",
     users: "User Management",
+    activity: "System Activity Log",
   };
 
   return (
@@ -2133,6 +2140,21 @@ export default function App() {
                     LOCKED
                   </span>
                 )}
+                {id === "activity" && !CAN[role].viewActivity && (
+                  <span
+                    style={{
+                      marginLeft: "auto",
+                      background: "rgba(239,68,68,0.2)",
+                      color: "#f87171",
+                      fontSize: 9,
+                      padding: "2px 5px",
+                      borderRadius: 4,
+                      fontWeight: 600,
+                    }}
+                  >
+                    LOCKED
+                  </span>
+                )}
               </button>
             );
           })}
@@ -2294,6 +2316,7 @@ export default function App() {
               ? <UsersPage role={role} currentUser={user} />
               : <AccessDeniedPage pageName="User Management" />
           )}
+          {page === "activity" && <ActivityLog role={role} setPage={setPage} />}
         </div>
       </div>
     </div>

@@ -6,6 +6,7 @@ FinGuard is a comprehensive finance dashboard application consisting of a robust
 
 - **User & Role Management**: Support for `viewer`, `analyst`, and `admin` roles, each with strict access boundaries.
 - **Financial Records**: Full CRUD operations for income and expense transactions.
+- **System Audit Trail**: Secure, transaction-wrapped tracking of all critical database operations (`CREATE`, `UPDATE`, `DELETE`) mapping field-level JSON differences.
 - **Aggregated Dashboards**: High-performance SQL-aggregated endpoints for net balances, monthly trends, and category totals.
 - **Pagination & Search**: Built-in limits, offsets, and wildcard searching capabilities.
 - **Soft Delete**: Data retention rules implemented to prevent permanent database record loss.
@@ -68,9 +69,9 @@ docker-compose up --build
 
 | Role | Permissions |
 | --- | --- |
-| **Viewer** | Dashboard read access only. Cannot view raw records. |
-| **Analyst** | Dashboard read + Raw records read & create. |
-| **Admin** | Full CRUD on records + User Management (activate/deactivate users, change roles). |
+| **Viewer** | Dashboard read access only. Cannot view raw records or system activity logs. |
+| **Analyst** | Dashboard read + Raw records read & create. View access to Activity Logs. |
+| **Admin** | Full CRUD on records + User Management (activate/deactivate users, change roles) + View access to Activity Logs. |
 
 ---
 
@@ -92,6 +93,9 @@ Authentication: Pass your JWT token in the `Authorization: Bearer <token>` heade
 - `DELETE /records/:id`: Soft delete a record. (Admin only)
 
 *Query Variables for `GET /records`:* `page`, `limit`, `type`, `category`, `search`, `date`.
+
+### System Activity & Audit (Admin / Analyst)
+- `GET /admin/audit-logs`: Fetch detailed system activity logs. Returns a structured JSON difference format isolating what precise properties were modified and by which user.
 
 ### Users (Admin Only)
 - `GET /users`: List all platform users.

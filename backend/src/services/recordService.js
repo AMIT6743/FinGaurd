@@ -1,9 +1,10 @@
 const { Op, fn, col, literal } = require('sequelize');
 const sequelize = require('../store/database');
 const Record = require('../models/record');
+const AuditLog = require('../models/auditLog');
 
 class RecordService {
-  async getNetBalance(excludeId = null) {
+  async getNetBalance(excludeId = null, transaction = null) {
     let whereClause = 'isDeleted = 0';
     const replacements = {};
 
@@ -23,6 +24,7 @@ class RecordService {
 
     const [result] = await sequelize.query(query, {
       replacements,
+      transaction,
     });
 
     return Number(result[0]?.net || 0);
@@ -96,53 +98,94 @@ class RecordService {
   }
 
   async updateRecord(recordId, userId, updateData) {
-    const record = await Record.findOne({
-      where: {
-        id: recordId,
-        isDeleted: false,
+    const t = await sequelize.transaction();
+    try {
+      const record = await Record.findOne({
+        where: {
+          id: recordId,
+          isDeleted: false,
+        },
+        transaction: t,
+      });
+
+      if (!record) {
+        throw new Error('Record not found or unauthorized');
       }
-    });
 
-    if (!record) {
-      throw new Error('Record not found or unauthorized');
-    }
+      const oldValues = record.toJSON();
 
-    if (updateData.amount !== undefined) record.amount = updateData.amount;
-    if (updateData.type !== undefined) record.type = updateData.type;
-    if (updateData.category !== undefined) record.category = updateData.category;
-    if (updateData.date !== undefined) record.date = updateData.date;
-    if (updateData.note !== undefined) record.note = updateData.note;
+      if (updateData.amount !== undefined) record.amount = updateData.amount;
+      if (updateData.type !== undefined) record.type = updateData.type;
+      if (updateData.category !== undefined) record.category = updateData.category;
+      if (updateData.date !== undefined) record.date = updateData.date;
+      if (updateData.note !== undefined) record.note = updateData.note;
 
-    // Validate balance won't go negative after update (SQL-level, no RAM scan)
-    if (record.type === 'expense') {
-      const netWithoutThis = await this.getNetBalance(recordId);
-      if (netWithoutThis < record.amount) {
-        let err = new Error('Insufficient balance for this update');
-        err.status = 400;
-        throw err;
+      // Validate balance won't go negative after update (SQL-level, no RAM scan)
+      if (record.type === 'expense') {
+        const netWithoutThis = await this.getNetBalance(recordId, t);
+        if (netWithoutThis < record.amount) {
+          let err = new Error('Insufficient balance for this update');
+          err.status = 400;
+          throw err;
+        }
       }
-    }
 
-    await record.save();
-    return record.toJSON();
+      await record.save({ transaction: t });
+      
+      const newValues = record.toJSON();
+
+      await AuditLog.create({
+        userId,
+        recordId,
+        action: 'UPDATE',
+        oldValues,
+        newValues,
+      }, { transaction: t });
+
+      await t.commit();
+      return record.toJSON();
+    } catch (error) {
+      await t.rollback();
+      throw error;
+    }
   }
 
   async deleteRecord(recordId, userId) {
-    const record = await Record.findOne({
-      where: {
-        id: recordId,
-        isDeleted: false,
+    const t = await sequelize.transaction();
+    try {
+      const record = await Record.findOne({
+        where: {
+          id: recordId,
+          isDeleted: false,
+        },
+        transaction: t,
+      });
+
+      if (!record) {
+        throw new Error('Record not found or unauthorized');
       }
-    });
 
-    if (!record) {
-      throw new Error('Record not found or unauthorized');
+      const oldValues = record.toJSON();
+
+      record.isDeleted = true;
+      await record.save({ transaction: t });
+
+      const newValues = record.toJSON();
+
+      await AuditLog.create({
+        userId,
+        recordId,
+        action: 'DELETE',
+        oldValues,
+        newValues,
+      }, { transaction: t });
+
+      await t.commit();
+      return true;
+    } catch (error) {
+      await t.rollback();
+      throw error;
     }
-
-    record.isDeleted = true;
-    await record.save();
-
-    return true;
   }
 }
 

@@ -2,7 +2,13 @@ const app = require('./app');
 const sequelize = require('./store/database');
 const User = require('./models/user');
 const Record = require('./models/record');
+const AuditLog = require('./models/auditLog');
 const bcrypt = require('bcryptjs');
+
+// Setup Associations
+const models = { User, Record, AuditLog };
+if (User.associate) User.associate(models);
+if (AuditLog.associate) AuditLog.associate(models);
 
 const PORT = process.env.PORT || 3000;
 

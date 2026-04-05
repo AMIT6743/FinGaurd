@@ -11,6 +11,7 @@ const cors = require('cors');
 const userRoutes = require('./routes/userRoutes');
 const recordRoutes = require('./routes/recordRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 
@@ -57,6 +58,7 @@ app.use('/api/users/login', authLimiter);   // tight limit on login
 app.use('/api/users', userRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check route
 app.get('/health', (req, res) => {
