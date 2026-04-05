@@ -1,5 +1,8 @@
 # FinGuard
 
+> [!TIP]
+> **Live Demo**: [https://fingaurd.onrender.com/](https://fingaurd.onrender.com/) (Use credentials below)
+
 FinGuard is a comprehensive finance dashboard application consisting of a robust Node.js backend and a React Vite frontend. It features Role-Based Access Control (RBAC), robust data validation, and aggregated analytical dashboards for managing and visualizing personal or enterprise financial records.
 
 ## 🚀 Features
@@ -19,12 +22,8 @@ FinGuard is a comprehensive finance dashboard application consisting of a robust
 
 ```text
 ├── backend/            # Express.js backend application
-│   ├── src/            # Application logic (Controllers, Services, Routes, Models)
-│   ├── tests/          # Jest integration test suite
-│   ├── package.json    # Backend dependencies
 ├── frontend/           # React + Vite frontend application
-│   ├── src/            # UI components and API logic
-│   ├── package.json    # Frontend dependencies
+├── Dockerfile          # Root multi-stage Docker build
 ├── README.md           # This integrated documentation
 └── .gitignore          # Repo-wide rules
 ```
@@ -33,35 +32,36 @@ FinGuard is a comprehensive finance dashboard application consisting of a robust
 
 ## 🛠️ Setup Instructions
 
-### 1. Start the Backend
+### 1. Manual Local Setup
 
+**Start the Backend**:
 ```bash
 cd backend
 npm install
 npm run dev
 ```
+The server will initialize on `http://localhost:3000`. By default, seed data is automatically generated.
 
-The server and the in-memory SQLite database will initialize on `http://localhost:3000`. By default, seed data containing an admin, an analyst, and a viewer account is automatically generated.
-
-### 2. Start the Frontend
-
+**Start the Frontend**:
 In a separate terminal:
-
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### 🐳 Alternative: Run with Docker
+### 🐳 2. Automated Setup (Docker)
 
-You can spin up both the Frontend and Backend simultaneously using Docker.
+The project is configured with a root-level multi-stage Dockerfile that builds the frontend and serves it via the backend automatically.
 
 ```bash
-docker-compose up --build
+# Build the production image
+docker build -t finguard .
+
+# Run the container
+docker run -p 3000:3000 finguard
 ```
-- Custom backend runs on: `http://localhost:3000`
-- React UI (served securely via NGINX) runs on: `http://localhost:8080`
+The application will be available at `http://localhost:3000`.
 
 ---
 
@@ -89,7 +89,7 @@ Use these pre-seeded accounts to explore the different levels of access:
 
 ## 📊 API Documentation
 
-Base URL: `http://localhost:3000/api`
+Base URL: `http://localhost:3000/api`  
 Authentication: Pass your JWT token in the `Authorization: Bearer <token>` header.
 
 ### Authentication
@@ -119,21 +119,21 @@ Authentication: Pass your JWT token in the `Authorization: Bearer <token>` heade
 
 ## 🛡️ System Robustness & Advanced Features
 
-- **Secure Identity Management (JWT)**: Stateless authentication via JSON Web Tokens handles user sessions securely without server-side state, strictly enforcing role-based permissions at the middleware level.
-- **Scalable Data Handling (Pagination)**: Server-side limit and offset logic prevents frontend bloat, keeping the system lightning-fast even with 10,000+ records.
-- **Dynamic Discovery (Search & Filtering)**: Integrated search functionality and multi-criteria filters (category, type, date range) allow users to locate specific transactions instantly.
-- **Data Forensic Integrity (Soft Delete)**: Uses an `isDeleted` flag instead of destructive physical deletion, ensuring financial history remains intact for internal auditing.
-- **Brute-Force Protection (Rate Limiting)**: Middleware-based IP throttling protects the system from automated attacks and prevents the login endpoint from being overwhelmed.
-- **Reliability (Integration Testing)**: Automated test suites verify core business logic, balance calculations, and authentication guards to guarantee system stability before deployment.
-- **Developer Experience (API Documentation)**: Standardized Swagger technical documentation makes the backend "Collaborative Ready" for other developers.
-- **Data Portability (CSV Export)**: Programmatic extraction of financial records into structured CSV file downloads, allowing users to seamlessly import their ledger data into external accounting systems.
+- **Secure Identity Management (JWT)**: Stateless authentication via JSON Web Tokens handles user sessions securely without server-side state.
+- **Scalable Data Handling (Pagination)**: Server-side limit and offset logic prevents frontend bloat.
+- **Dynamic Discovery (Search & Filtering)**: Integrated search functionality and multi-criteria filters.
+- **Data Forensic Integrity (Soft Delete)**: Uses an `isDeleted` flag instead of destructive physical deletion.
+- **Brute-Force Protection (Rate Limiting)**: Middleware-based IP throttling protects the system from automated attacks.
+- **Reliability (Integration Testing)**: Automated test suites verify core business logic.
+- **Data Portability (CSV Export)**: Programmatic extraction of financial records into structured CSV file downloads.
 
 ---
 
 ## 📌 Assumptions
 
-- **Authentication Focus**: Authentication is mocked using a fast JWT implementation as a placeholder. Since no third-party email verification (like SendGrid) is hooked up, accounts are assumed to be implicitly "verified" upon creation to make evaluating the system seamless.
-- **Storage Approach**: SQlite was leveraged using Sequelize. The assumption is that reviewers want a robust backend structure but want it to be *immediately testable upon cloning* without having to provision external PostgreSQL/MongoDB databases locally.
+- **Unified Build**: The project follows a consolidated build approach where the Node.js backend serves the compiled React application, allowing for simplified single-container deployments.
+- **Authentication Focus**: Authentication is mocked using a fast JWT implementation as a placeholder. Accounts are assumed to be implicitly "verified" upon creation.
+- **Storage Approach**: SQlite was leveraged using Sequelize. This allows the system to be immediately testable upon cloning without provisioning external databases.
 - **Role Assignment**: Assumed that the first entry to the system is seeded, and after that, only an `Admin` has the power to change or define specific user roles.
 
 ---
@@ -142,9 +142,9 @@ Authentication: Pass your JWT token in the `Authorization: Bearer <token>` heade
 
 - **SQLite vs Production Grade Databases (e.g., PostgreSQL)**
   - *Tradeoff*: SQLite stores everything in a local file (`database.sqlite`).
-  - *Pro*: Zero dependency configuration or installation required to get this project fully up and running.
+  - *Pro*: Zero dependency configuration or installation required for testing.
   - *Con*: Native SQLite is generally not built to scale horizontally for massive concurrent write loads.
 - **On-the-fly SQL Aggregations vs Caching**
   - *Tradeoff*: Dashboard numbers are aggregated directly via SQL queries (like `SUM` and `GROUP BY`) every time the endpoint is hit.
-  - *Pro*: Prevents Node.js memory crashes that would occur from buffering arrays of 10,000+ records, keeping the code simple and accurate.
-  - *Con*: If traffic surged, executing raw aggregate queries continuously would bottleneck the CPU. In a strict enterprise scenario, a caching layer (Redis) or materialized views would be implemented.
+  - *Pro*: Prevents Node.js memory crashes that would occur from buffering arrays of 10,000+ records.
+  - *Con*: If traffic surged, executing raw aggregate queries continuously would bottleneck the CPU. In a strict enterprise scenario, a caching layer (Redis) would be implemented.
